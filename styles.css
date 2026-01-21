@@ -108,8 +108,24 @@ body {
   min-width: 52px;
   text-align: center;
   cursor: pointer;
-  transition: transform 0.1s ease, border-color 0.1s ease;
+  transition: transform 0.1s ease, border-color 0.1s ease, background-color 0.1s ease;
   font-weight: 600;
+}
+
+.card--selectable {
+  border-color: #cbd5e0;
+  cursor: pointer;
+}
+
+.card--selectable:hover {
+  transform: translateY(-2px);
+  border-color: #2f80ed;
+}
+
+.card--selected {
+  border-color: #2f80ed;
+  background: #ebf4ff;
+  transform: translateY(-4px);
 }
 
 .card--playable {
@@ -119,10 +135,6 @@ body {
 .card:disabled {
   cursor: not-allowed;
   opacity: 0.5;
-}
-
-.card--playable:hover {
-  transform: translateY(-2px);
 }
 
 .hand__actions {

@@ -9,6 +9,7 @@ const state = {
   passCount: 0,
   lastPlayedBy: null,
   isGameOver: false,
+  selectedCards: [], // Track selected cards for multi-card play
 };
 
 const pileEl = document.getElementById("pile");
@@ -17,6 +18,12 @@ const logEl = document.getElementById("log");
 const handEl = document.getElementById("hand");
 const passButton = document.getElementById("pass");
 const restartButton = document.getElementById("restart");
+const playSelectedButton = document.createElement("button");
+playSelectedButton.id = "play-selected";
+playSelectedButton.className = "button";
+playSelectedButton.textContent = "選択したカードを出す";
+playSelectedButton.type = "button";
+
 const playerEls = [
   document.getElementById("player-1"),
   document.getElementById("player-2"),
@@ -42,6 +49,8 @@ const shuffle = (deck) => {
 };
 
 const cardLabel = (card) => `${card.rank}${card.suit}`;
+
+const cardsLabel = (cards) => cards.map(cardLabel).join("");
 
 const log = (message) => {
   const item = document.createElement("li");
@@ -76,6 +85,7 @@ const setupPlayers = () => {
   state.passCount = 0;
   state.lastPlayedBy = null;
   state.isGameOver = false;
+  state.selectedCards = [];
   logEl.innerHTML = "";
   log("新しいゲームを開始しました。");
 };
@@ -92,20 +102,93 @@ const findStartingPlayer = () => {
 
 const currentPlayer = () => state.players[state.currentPlayer];
 
-const canPlayCard = (card) => {
-  if (!state.pile) {
-    return true;
+// Check if cards form a valid stairs (consecutive same-suit cards)
+const isStairs = (cards) => {
+  if (cards.length < 3) return false;
+  
+  // Check same suit
+  const suit = cards[0].suit;
+  if (!cards.every(c => c.suit === suit)) return false;
+  
+  // Sort by value
+  const sorted = [...cards].sort((a, b) => a.value - b.value);
+  
+  // Check consecutive
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i].value !== sorted[i-1].value + 1) return false;
   }
-  return card.value > state.pile.card.value;
+  return true;
+};
+
+// Check if all cards have the same rank
+const isSameRank = (cards) => {
+  if (cards.length < 1) return false;
+  const rank = cards[0].rank;
+  return cards.every(c => c.rank === rank);
+};
+
+// Determine play type and validate
+const getPlayType = (cards) => {
+  if (cards.length === 1) return 'single';
+  if (isSameRank(cards)) return 'pair';
+  if (isStairs(cards)) return 'stairs';
+  return null; // Invalid combination
+};
+
+// Get the strength of a play (highest card value for stairs, card value for others)
+const getPlayStrength = (cards, type) => {
+  if (cards.length === 0) return -1;
+  if (type === 'stairs') {
+    return Math.max(...cards.map(c => c.value));
+  }
+  return cards[0].value; // For single and pair, all cards have same value
+};
+
+const canPlayCards = (cards) => {
+  if (!cards || cards.length === 0) return false;
+  
+  const playType = getPlayType(cards);
+  if (!playType) return false; // Invalid combination
+  
+  if (!state.pile) {
+    return true; // Can play anything when pile is empty
+  }
+  
+  // Must match the number of cards and play type
+  if (cards.length !== state.pile.cards.length) return false;
+  if (playType !== state.pile.type) return false;
+  
+  // Must be stronger
+  const ourStrength = getPlayStrength(cards, playType);
+  const pileStrength = getPlayStrength(state.pile.cards, state.pile.type);
+  return ourStrength > pileStrength;
+};
+
+const canPlayCard = (card) => {
+  return canPlayCards([card]);
+};
+
+const playCards = (playerIndex, cards) => {
+  const player = state.players[playerIndex];
+  
+  // Remove played cards from hand efficiently
+  player.hand = player.hand.filter(handCard => !cards.includes(handCard));
+  
+  const playType = getPlayType(cards);
+  state.pile = { cards, playerIndex, type: playType };
+  state.lastPlayedBy = playerIndex;
+  state.passCount = 0;
+  
+  // Log message
+  let message = `${player.name}が${cardsLabel(cards)}を出しました`;
+  if (playType === 'stairs') {
+    message += '（階段）';
+  }
+  log(message + '。');
 };
 
 const playCard = (playerIndex, card) => {
-  const player = state.players[playerIndex];
-  player.hand = player.hand.filter((c) => c !== card);
-  state.pile = { card, playerIndex };
-  state.lastPlayedBy = playerIndex;
-  state.passCount = 0;
-  log(`${player.name}が${cardLabel(card)}を出しました。`);
+  playCards(playerIndex, [card]);
 };
 
 const passTurn = (playerIndex) => {
@@ -166,9 +249,11 @@ const renderPile = () => {
     pileEl.textContent = "まだ場にカードがありません";
     return;
   }
-  pileEl.textContent = `${state.players[state.pile.playerIndex].name} : ${cardLabel(
-    state.pile.card,
-  )}`;
+  let display = `${state.players[state.pile.playerIndex].name} : ${cardsLabel(state.pile.cards)}`;
+  if (state.pile.type === 'stairs') {
+    display += '（階段）';
+  }
+  pileEl.textContent = display;
 };
 
 const renderTurn = () => {
@@ -178,33 +263,43 @@ const renderTurn = () => {
 const renderHand = () => {
   handEl.innerHTML = "";
   const player = state.players[0];
+  const isMyTurn = state.currentPlayer === 0 && !state.isGameOver;
+  
   player.hand.forEach((card) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "card";
     button.textContent = cardLabel(card);
-    const isPlayable = state.currentPlayer === 0 && !state.isGameOver && canPlayCard(card);
-    if (isPlayable) {
-      button.classList.add("card--playable");
+    
+    const isSelected = state.selectedCards.includes(card);
+    if (isSelected) {
+      button.classList.add("card--selected");
     }
-    button.disabled = !isPlayable;
+    
+    if (isMyTurn) {
+      button.classList.add("card--selectable");
+    }
+    
     button.addEventListener("click", () => {
-      if (!isPlayable) {
-        return;
+      if (!isMyTurn) return;
+      
+      // Toggle selection
+      if (isSelected) {
+        state.selectedCards = state.selectedCards.filter(c => c !== card);
+      } else {
+        state.selectedCards.push(card);
       }
-      playCard(0, card);
-      if (checkGameOver()) {
-        render();
-        return;
-      }
-      advanceTurn();
       render();
-      runCpuTurns();
     });
+    
     handEl.appendChild(button);
   });
 
-  passButton.disabled = state.currentPlayer !== 0 || state.isGameOver;
+  // Update play selected button
+  const canPlay = isMyTurn && state.selectedCards.length > 0 && canPlayCards(state.selectedCards);
+  playSelectedButton.disabled = !canPlay;
+  
+  passButton.disabled = !isMyTurn;
 };
 
 const render = () => {
@@ -216,13 +311,71 @@ const render = () => {
 
 const cpuPlay = (playerIndex) => {
   const player = state.players[playerIndex];
-  const playable = player.hand.filter((card) => canPlayCard(card));
-  if (playable.length === 0) {
+  
+  // Try to find valid plays
+  const validPlays = [];
+  
+  // Try single cards
+  player.hand.forEach(card => {
+    if (canPlayCards([card])) {
+      validPlays.push([card]);
+    }
+  });
+  
+  // Try pairs and multiples of same rank
+  const rankGroups = {};
+  player.hand.forEach(card => {
+    if (!rankGroups[card.rank]) rankGroups[card.rank] = [];
+    rankGroups[card.rank].push(card);
+  });
+  
+  Object.values(rankGroups).forEach(group => {
+    if (group.length >= 2) {
+      for (let i = 2; i <= group.length; i++) {
+        const combo = group.slice(0, i);
+        if (canPlayCards(combo)) {
+          validPlays.push(combo);
+        }
+      }
+    }
+  });
+  
+  // Try stairs (3+ consecutive same suit)
+  const suitGroups = {};
+  player.hand.forEach(card => {
+    if (!suitGroups[card.suit]) suitGroups[card.suit] = [];
+    suitGroups[card.suit].push(card);
+  });
+  
+  Object.values(suitGroups).forEach(group => {
+    if (group.length >= 3) {
+      const sorted = [...group].sort((a, b) => a.value - b.value);
+      // Try all possible consecutive sequences
+      for (let start = 0; start < sorted.length; start++) {
+        for (let len = 3; len <= sorted.length - start; len++) {
+          const combo = sorted.slice(start, start + len);
+          if (isStairs(combo) && canPlayCards(combo)) {
+            validPlays.push(combo);
+          }
+        }
+      }
+    }
+  });
+  
+  if (validPlays.length === 0) {
     passTurn(playerIndex);
     return;
   }
-  const card = playable[0];
-  playCard(playerIndex, card);
+  
+  // Play the weakest valid combination (first single, or lowest strength)
+  validPlays.sort((a, b) => {
+    if (a.length !== b.length) return a.length - b.length;
+    const typeA = getPlayType(a);
+    const typeB = getPlayType(b);
+    return getPlayStrength(a, typeA) - getPlayStrength(b, typeB);
+  });
+  
+  playCards(playerIndex, validPlays[0]);
 };
 
 const runCpuTurns = () => {
@@ -239,10 +392,28 @@ const runCpuTurns = () => {
   render();
 };
 
+playSelectedButton.addEventListener("click", () => {
+  if (state.currentPlayer !== 0 || state.isGameOver) return;
+  if (state.selectedCards.length === 0) return;
+  if (!canPlayCards(state.selectedCards)) return;
+  
+  playCards(0, state.selectedCards);
+  state.selectedCards = [];
+  
+  if (checkGameOver()) {
+    render();
+    return;
+  }
+  advanceTurn();
+  render();
+  runCpuTurns();
+});
+
 passButton.addEventListener("click", () => {
   if (state.currentPlayer !== 0 || state.isGameOver) {
     return;
   }
+  state.selectedCards = [];
   passTurn(0);
   advanceTurn();
   render();
@@ -254,6 +425,10 @@ restartButton.addEventListener("click", () => {
   render();
   runCpuTurns();
 });
+
+// Insert play selected button into the DOM
+const handActionsEl = document.querySelector(".hand__actions");
+handActionsEl.insertBefore(playSelectedButton, passButton);
 
 setupPlayers();
 render();
