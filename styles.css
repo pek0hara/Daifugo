@@ -137,10 +137,6 @@ body {
   opacity: 0.5;
 }
 
-.card--selectable:hover {
-  transform: translateY(-2px);
-}
-
 .hand__actions {
   display: flex;
   gap: 12px;

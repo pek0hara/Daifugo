@@ -137,6 +137,7 @@ const getPlayType = (cards) => {
 
 // Get the strength of a play (highest card value for stairs, card value for others)
 const getPlayStrength = (cards, type) => {
+  if (cards.length === 0) return -1;
   if (type === 'stairs') {
     return Math.max(...cards.map(c => c.value));
   }
@@ -170,13 +171,8 @@ const canPlayCard = (card) => {
 const playCards = (playerIndex, cards) => {
   const player = state.players[playerIndex];
   
-  // Remove played cards from hand
-  cards.forEach(card => {
-    const index = player.hand.indexOf(card);
-    if (index > -1) {
-      player.hand.splice(index, 1);
-    }
-  });
+  // Remove played cards from hand efficiently
+  player.hand = player.hand.filter(handCard => !cards.includes(handCard));
   
   const playType = getPlayType(cards);
   state.pile = { cards, playerIndex, type: playType };
