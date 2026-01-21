@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ひとり大富豪</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <h1>ひとり大富豪</h1>
+        <p>あなた vs 3人のCPU。カードをクリックして出し、出せない時はパス。</p>
+      </header>
+
+      <section class="table">
+        <div class="table__status">
+          <div>
+            <h2>場</h2>
+            <p id="pile">まだ場にカードがありません</p>
+          </div>
+          <div>
+            <h2>ターン</h2>
+            <p id="turn">準備中…</p>
+          </div>
+        </div>
+
+        <div class="table__players">
+          <div class="player" id="player-1"></div>
+          <div class="player" id="player-2"></div>
+          <div class="player" id="player-3"></div>
+        </div>
+
+        <div class="table__log">
+          <h2>ログ</h2>
+          <ul id="log"></ul>
+        </div>
+      </section>
+
+      <section class="hand">
+        <h2>あなたの手札</h2>
+        <div id="hand" class="hand__cards"></div>
+        <div class="hand__actions">
+          <button id="pass" class="button button--ghost" type="button">パス</button>
+          <button id="restart" class="button" type="button">最初から</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
