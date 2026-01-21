@@ -1,0 +1,161 @@
+:root {
+  color-scheme: light;
+  font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+  background: #f6f4ef;
+  color: #1f2933;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 24px;
+}
+
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.app__header {
+  background: #ffffff;
+  padding: 20px 24px;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(31, 41, 51, 0.08);
+}
+
+.app__header h1 {
+  margin: 0 0 8px;
+}
+
+.table {
+  display: grid;
+  gap: 20px;
+}
+
+.table__status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.table__status > div,
+.table__log {
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(31, 41, 51, 0.06);
+}
+
+.table__players {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.player {
+  background: linear-gradient(135deg, #edf2f7, #ffffff);
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #dde3ea;
+}
+
+.player__name {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.player__status {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.table__log ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.hand {
+  background: #ffffff;
+  padding: 20px 24px;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(31, 41, 51, 0.08);
+}
+
+.hand__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.card {
+  border: 2px solid transparent;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fefefe;
+  min-width: 52px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+  font-weight: 600;
+}
+
+.card--playable {
+  border-color: #2f80ed;
+}
+
+.card:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.card--playable:hover {
+  transform: translateY(-2px);
+}
+
+.hand__actions {
+  display: flex;
+  gap: 12px;
+}
+
+.button {
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #2f80ed;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button--ghost {
+  background: #e2e8f0;
+  color: #1f2933;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 640px) {
+  body {
+    padding: 16px;
+  }
+
+  .hand__cards {
+    justify-content: center;
+  }
+}
